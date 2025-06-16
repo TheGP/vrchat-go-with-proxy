@@ -36,5 +36,41 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+```
+
+### Using Proxy Support
+
+This fork adds HTTP proxy support to the original VRChat Go client:
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/TheGP/vrchat-go-with-proxy"
+)
+
+func main() {
+	// Create proxy configuration
+	proxyConfig := &vrchat.ProxyConfig{
+		Host:     "proxy-host",     // Proxy server hostname or IP
+		Port:     "8080",          // Proxy server port
+		Username: "proxy-username", // Optional: proxy authentication username
+		Password: "proxy-password", // Optional: proxy authentication password
+	}
+
+	// Create client with proxy support
+	client := vrchat.NewClientWithProxy("https://api.vrchat.cloud/api/1", proxyConfig)
+
+	// Use the client as normal - all requests will go through the proxy
+	resp, err := client.Authenticate(vrchat.AuthenticateParams{
+		Username: "vrchat-username",
+		Password: "vrchat-password",
+	})
+	if err != nil {
+		panic(err)
+	}
+```
 
 Read full example [here](examples/main.go).
