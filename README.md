@@ -21,21 +21,59 @@ package main
 
 import (
 	"fmt"
-
 	"github.com/TheGP/vrchat-go-with-proxy"
 )
 
 func main() {
 	client := vrchat.NewClient("https://api.vrchat.cloud/api/1")
 
-	// login
-	resp, err := client.Authenticate(vrchat.AuthenticateParams{
-		Username: "username",
-		Password: "password",
-	})
+	// Authenticate with custom User-Agent
+	userAgent := "my-custom-app/1.0 user@email.com"
+	err := client.Authenticate("username", "password", "totp-code", userAgent)
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println("Authenticated!")
+}
+```
+
+### Getting auth cookies
+
+After authenticating, you can get the cookies using the `GetCookies` method:
+
+```go
+// After authenticating:
+cookies := client.GetCookies() // []*http.Cookie
+```
+
+### Authenticate Using Cookies
+
+If you have previously saved authentication cookies, you can authenticate using them:
+
+```go
+package main
+
+import (
+	"github.com/TheGP/vrchat-go-with-proxy"
+	"net/http"
+)
+
+func main() {
+	client := vrchat.NewClient("https://api.vrchat.cloud/api/1")
+
+	// Load your cookies (from DB, file, etc)
+	var cookies []*http.Cookie
+	// ... load cookies ...
+
+	userAgent := "my-custom-app/1.0 user@email.com"
+	err := client.AuthenticateWithCookies(cookies, userAgent)
+	if err != nil {
+		panic(err)
+	}
+
+	// Now you can make authenticated requests
+}
 ```
 
 ### Using Proxy Support
@@ -46,8 +84,6 @@ This fork adds HTTP proxy support to the original VRChat Go client:
 package main
 
 import (
-	"fmt"
-
 	"github.com/TheGP/vrchat-go-with-proxy"
 )
 
@@ -58,6 +94,20 @@ func main() {
 		Port:     "8080",          // Proxy server port
 		Username: "proxy-username", // Optional: proxy authentication username
 		Password: "proxy-password", // Optional: proxy authentication password
+	}
+
+	client := vrchat.NewClientWithProxy("https://api.vrchat.cloud/api/1", proxyConfig)
+
+	userAgent := "my-custom-app/1.0 user@email.com"
+	err := client.Authenticate("username", "password", "totp-code", userAgent)
+	if err != nil {
+		panic(err)
+	}
+
+	// ...
+}
+```
+
 	}
 
 	// Create client with proxy support

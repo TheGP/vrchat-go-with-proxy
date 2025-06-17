@@ -2,6 +2,7 @@ package vrchat
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -30,19 +31,28 @@ func NewClient(baseURL string) *Client {
 // NewClientWithProxy creates a new VRChat client with proxy support
 func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig) *Client {
 	client := resty.New().SetBaseURL(baseURL)
-	
+
 	if proxyConfig != nil {
-		proxyURL := fmt.Sprintf("http://%s:%s@%s:%s", 
-			proxyConfig.Username, 
-			proxyConfig.Password, 
-			proxyConfig.Host, 
+		proxyURL := fmt.Sprintf("http://%s:%s@%s:%s",
+			proxyConfig.Username,
+			proxyConfig.Password,
+			proxyConfig.Host,
 			proxyConfig.Port)
 		client.SetProxy(proxyURL)
 	}
-	
+
 	return &Client{
 		client: client,
 	}
+}
+
+// SetCookies sets cookies for the client to bypass authentication
+func (c *Client) SetCookies(cookies []*http.Cookie) {
+	c.client.SetCookies(cookies)
+}
+
+func (c *Client) GetCookies() []*http.Cookie {
+	return c.client.Cookies
 }
 
 // CheckUserExistsParams represents the parameters for the CheckUserExists request
