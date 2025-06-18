@@ -1550,8 +1550,9 @@ func (c *Client) Unfriend(params UnfriendParams) (*UnfriendSuccess, error) {
 
 // SearchGroupsParams represents the parameters for the SearchGroups request
 type SearchGroupsParams struct {
-	Offset int64 `json:"offset"`
-	N      int64 `json:"n"`
+	Offset int64  `json:"offset"`
+	N      int64  `json:"n"`
+	Query  string `json:"query"`
 }
 
 func (c *Client) SearchGroups(params SearchGroupsParams) (*LimitedGroupListResponse, error) {
@@ -1563,6 +1564,9 @@ func (c *Client) SearchGroups(params SearchGroupsParams) (*LimitedGroupListRespo
 	}
 	if lo.IsNotEmpty(params.N) {
 		queryParams["n"] = fmt.Sprintf("%v", params.N)
+	}
+	if lo.IsNotEmpty(params.Query) {
+		queryParams["query"] = fmt.Sprintf("%v", params.Query)
 	}
 
 	// Create request
