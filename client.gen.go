@@ -56,6 +56,10 @@ func (c *Client) GetCookies() []*http.Cookie {
 	return c.client.Cookies
 }
 
+func (c *Client) ClearCookies() {
+	c.client.Cookies = []*http.Cookie{}
+}
+
 // CheckUserExistsParams represents the parameters for the CheckUserExists request
 type CheckUserExistsParams struct {
 	Email         string `json:"email"`
@@ -2192,8 +2196,7 @@ func (c *Client) GetUserInstancesGroups(params GetUserInstancesGroupsParams) (*U
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
 	}
-
-	fmt.Println("RAW JSON RESPONSE:", resp.String())
+	//fmt.Println("RAW JSON RESPONSE:", resp.String())
 
 	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
 		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
