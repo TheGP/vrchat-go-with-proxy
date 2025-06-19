@@ -46,6 +46,13 @@ After authenticating, you can get the cookies using the `GetCookies` method:
 // After authenticating:
 cookies := client.GetCookies() // []*http.Cookie
 ```
+To save them for later. If cookie authentication failed, you can clear them using the `ClearCookies` method:
+
+```go
+client.ClearCookies()
+```
+You have to do it before authenticating normally.
+
 
 ### Authenticate Using Cookies
 

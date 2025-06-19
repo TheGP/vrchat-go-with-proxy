@@ -25,7 +25,7 @@ type UserGroupInstanceFull struct {
 	Permanent                bool               `json:"permanent"`
 	PhotonRegion             string             `json:"photonRegion"`
 	PlayerPersistenceEnabled bool               `json:"playerPersistenceEnabled"`
-	Region                   string             `json:"region"`
+	Region                   InstanceRegion     `json:"region"`
 	SecureName               string             `json:"secureName"`
 	ShortName                string             `json:"shortName"`
 	Tags                     []string           `json:"tags"`
@@ -40,7 +40,7 @@ type UserGroupInstanceFull struct {
 	RoleRestricted           bool               `json:"roleRestricted"`
 	Strict                   bool               `json:"strict"`
 	UserCount                int                `json:"userCount"`
-	GroupAccessType          string             `json:"groupAccessType"`
+	GroupAccessType          GroupAccessType    `json:"groupAccessType"`
 	HasCapacityForYou        bool               `json:"hasCapacityForYou"`
 	Nonce                    string             `json:"nonce"`
 	ClosedAt                 string             `json:"closedAt"`
