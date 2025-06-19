@@ -2,6 +2,7 @@ package vrchat
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -4855,4 +4856,22 @@ func (c *Client) GetWorldInstance(params GetWorldInstanceParams) (*InstanceRespo
 		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
 	}
 	return &result, nil
+}
+
+func (c *Client) TestProxy() (string, error) {
+	resp, err := c.client.R().
+		SetDoNotParseResponse(true).
+		Get("https://api.ipify.org/")
+	if err != nil {
+		return "", err
+	}
+	defer resp.RawBody().Close()
+	if resp.StatusCode() != 200 {
+		return "", fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
+	}
+	ip, err := io.ReadAll(resp.RawBody())
+	if err != nil || len(ip) < 6 {
+		return "", fmt.Errorf("unexpected response: %s", string(ip))
+	}
+	return string(ip), nil
 }

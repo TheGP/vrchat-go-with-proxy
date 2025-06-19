@@ -98,6 +98,13 @@ func main() {
 
 	client := vrchat.NewClientWithProxy("https://api.vrchat.cloud/api/1", proxyConfig)
 
+	// Testing proxy
+	ip, err := client.TestProxy()
+	if err != nil {
+		log.Fatalf("Proxy test failed: %v", err)
+	}
+	fmt.Println("Proxy IP:", ip)
+
 	userAgent := "my-custom-app/1.0 user@email.com"
 	err := client.Authenticate("username", "password", "totp-code", userAgent)
 	if err != nil {
