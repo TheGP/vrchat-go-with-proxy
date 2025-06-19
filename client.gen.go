@@ -2170,6 +2170,73 @@ func (c *Client) DeleteGroupGalleryImage(params DeleteGroupGalleryImageParams) (
 	return &result, nil
 }
 
+// GetUserInstancesGroupsParams represents the parameters for the GetUserInstancesGroups request
+// GET /users/{userId}/instances/groups
+// https://vrchat.community/openapi/get-user-group-instances
+// Returns a list of group instances for a user
+
+type GetUserInstancesGroupsParams struct {
+	UserId string `json:"userId"`
+}
+
+func (c *Client) GetUserInstancesGroups(params GetUserInstancesGroupsParams) (*UserInstancesGroupsResponseFull, error) {
+	path := "/users/{userId}/instances/groups"
+	path = strings.ReplaceAll(path, "{userId}", fmt.Sprintf("%v", params.UserId))
+
+	req := c.client.R()
+	var result UserInstancesGroupsResponseFull
+	req.SetResult(&result)
+
+	resp, err := req.Get(path)
+	if err != nil {
+		return nil, fmt.Errorf("error sending request: %w", err)
+	}
+
+	fmt.Println("RAW JSON RESPONSE:", resp.String())
+
+	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
+	}
+	return &result, nil
+}
+
+// GetUserGroupInstancesParams represents the parameters for the GetUserGroupInstances request
+// GET /users/{userId}/groups/{groupId}/instances
+// https://vrchat.community/openapi/get-user-group-instances
+// Returns a list of group instances for a specific user and group
+
+// type GetUserGroupInstancesParams struct {
+// 	UserId  string `json:"userId"`
+// 	GroupId string `json:"groupId"`
+// }
+
+// type UserGroupInstanceListResponse struct {
+// 	Data []GroupInstance `json:"data"`
+// }
+
+// func (c *Client) GetUserGroupInstances(params GetUserGroupInstancesParams) (*UserGroupInstanceListResponse, error) {
+// 	path := "/users/{userId}/groups/{groupId}/instances"
+// 	path = strings.ReplaceAll(path, "{userId}", fmt.Sprintf("%v", params.UserId))
+// 	path = strings.ReplaceAll(path, "{groupId}", fmt.Sprintf("%v", params.GroupId))
+
+// 	// Create request
+// 	req := c.client.R()
+// 	// Set response object
+// 	var result UserGroupInstanceListResponse
+// 	req.SetResult(&result)
+
+// 	// Send request
+// 	resp, err := req.Get(path)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("error sending request: %w", err)
+// 	}
+
+// 	if resp.StatusCode() < 200 || resp.StatusCode() >= 300 {
+// 		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
+// 	}
+// 	return &result, nil
+// }
+
 // GetGroupInstancesParams represents the parameters for the GetGroupInstances request
 type GetGroupInstancesParams struct {
 	GroupId string `json:"groupId"`
