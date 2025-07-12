@@ -3388,7 +3388,7 @@ type GetInstanceParams struct {
 	InstanceId string `json:"instanceId"`
 }
 
-func (c *Client) GetInstance(params GetInstanceParams) (*InstanceResponse, error) {
+func (c *Client) GetInstance(params GetInstanceParams) (*DetailedInstanceResponse, error) {
 	path := "/instances/{worldId}:{instanceId}"
 	// Replace path parameters and prepare query parameters
 	queryParams := make(map[string]string)
@@ -3400,7 +3400,7 @@ func (c *Client) GetInstance(params GetInstanceParams) (*InstanceResponse, error
 	// Set query parameters
 	req.SetQueryParams(queryParams)
 	// Set response object
-	var result InstanceResponse
+	var result DetailedInstanceResponse
 	req.SetResult(&result)
 
 	// Send request
