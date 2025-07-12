@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
+	"golang.org/x/time/rate"
 )
 
 type Client struct {
@@ -23,15 +24,15 @@ type ProxyConfig struct {
 	Password string
 }
 
-func NewClient(baseURL string) *Client {
+func NewClient(baseURL string, delay time.Duration) *Client {
 	return &Client{
-		client: resty.New().SetBaseURL(baseURL),
+		client: resty.New().SetBaseURL(baseURL).SetRateLimiter(rate.NewLimiter(rate.Every(delay), 1)),
 	}
 }
 
 // NewClientWithProxy creates a new VRChat client with proxy support
-func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig) *Client {
-	client := resty.New().SetBaseURL(baseURL)
+func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig, delay time.Duration) *Client {
+	client := resty.New().SetBaseURL(baseURL).SetRateLimiter(rate.NewLimiter(rate.Every(delay), 1))
 
 	if proxyConfig != nil {
 		proxyURL := fmt.Sprintf("http://%s:%s@%s:%s",
