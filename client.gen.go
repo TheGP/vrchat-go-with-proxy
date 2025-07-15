@@ -5,12 +5,56 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/samber/lo"
-	"golang.org/x/time/rate"
+	"resty.dev/v3"
 )
+
+// RateLimiter holds the state for rate limiting
+type RateLimiter struct {
+	mu          sync.Mutex
+	lastRequest time.Time
+	minInterval time.Duration
+}
+
+// NewRateLimiter creates a new rate limiter with the specified minimum interval
+func NewRateLimiter(minInterval time.Duration) *RateLimiter {
+	return &RateLimiter{
+		minInterval: minInterval,
+	}
+}
+
+// Middleware returns a middleware function that enforces rate limiting
+func (rl *RateLimiter) Middleware() resty.RequestMiddleware {
+	return func(c *resty.Client, req *resty.Request) error {
+		rl.mu.Lock()
+		defer rl.mu.Unlock()
+
+		now := time.Now()
+
+		// Check if this is not the first request
+		if !rl.lastRequest.IsZero() {
+			elapsed := now.Sub(rl.lastRequest)
+			if elapsed < rl.minInterval {
+				waitTime := rl.minInterval - elapsed
+				fmt.Printf("Rate limiting: waiting %v before next request\n", waitTime)
+				time.Sleep(waitTime)
+				now = time.Now() // Update now after sleeping
+			}
+		}
+
+		rl.lastRequest = now
+		return nil
+	}
+}
+
+// RateLimitingMiddleware is a standalone middleware function for Resty v3
+func RateLimitingMiddleware(minInterval time.Duration) resty.RequestMiddleware {
+	rateLimiter := NewRateLimiter(minInterval)
+	return rateLimiter.Middleware()
+}
 
 type Client struct {
 	client *resty.Client
@@ -26,13 +70,13 @@ type ProxyConfig struct {
 
 func NewClient(baseURL string, delay time.Duration) *Client {
 	return &Client{
-		client: resty.New().SetBaseURL(baseURL).SetRateLimiter(rate.NewLimiter(rate.Every(delay), 1)),
+		client: resty.New().SetBaseURL(baseURL).AddRequestMiddleware(RateLimitingMiddleware(delay)),
 	}
 }
 
 // NewClientWithProxy creates a new VRChat client with proxy support
 func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig, delay time.Duration) *Client {
-	client := resty.New().SetBaseURL(baseURL).SetRateLimiter(rate.NewLimiter(rate.Every(delay), 1))
+	client := resty.New().SetBaseURL(baseURL).AddRequestMiddleware(RateLimitingMiddleware(delay))
 
 	if proxyConfig != nil {
 		proxyURL := fmt.Sprintf("http://%s:%s@%s:%s",
@@ -54,11 +98,11 @@ func (c *Client) SetCookies(cookies []*http.Cookie) {
 }
 
 func (c *Client) GetCookies() []*http.Cookie {
-	return c.client.Cookies
+	return c.client.Cookies()
 }
 
 func (c *Client) ClearCookies() {
-	c.client.Cookies = []*http.Cookie{}
+	c.client.SetCookies([]*http.Cookie{})
 }
 
 // CheckUserExistsParams represents the parameters for the CheckUserExists request
@@ -4869,11 +4913,12 @@ func (c *Client) TestProxy() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.RawBody().Close()
+
+	defer resp.Body.Close()
 	if resp.StatusCode() != 200 {
 		return "", fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode(), resp.String())
 	}
-	ip, err := io.ReadAll(resp.RawBody())
+	ip, err := io.ReadAll(resp.Body)
 	if err != nil || len(ip) < 6 {
 		return "", fmt.Errorf("unexpected response: %s", string(ip))
 	}

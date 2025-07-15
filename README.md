@@ -22,10 +22,11 @@ package main
 import (
 	"fmt"
 	"github.com/TheGP/vrchat-go-with-proxy"
+	"time"
 )
 
 func main() {
-	client := vrchat.NewClient("https://api.vrchat.cloud/api/1")
+	client := vrchat.NewClient("https://api.vrchat.cloud/api/1", time.Minute*1)
 
 	// Authenticate with custom User-Agent
 	userAgent := "my-custom-app/1.0 user@email.com"
@@ -64,10 +65,11 @@ package main
 import (
 	"github.com/TheGP/vrchat-go-with-proxy"
 	"net/http"
+	"time"
 )
 
 func main() {
-	client := vrchat.NewClient("https://api.vrchat.cloud/api/1")
+	client := vrchat.NewClient("https://api.vrchat.cloud/api/1", time.Minute*1)
 
 	// Load your cookies (from DB, file, etc)
 	var cookies []*http.Cookie
@@ -92,6 +94,7 @@ package main
 
 import (
 	"github.com/TheGP/vrchat-go-with-proxy"
+	"time"
 )
 
 func main() {
@@ -103,7 +106,7 @@ func main() {
 		Password: "proxy-password", // Optional: proxy authentication password
 	}
 
-	client := vrchat.NewClientWithProxy("https://api.vrchat.cloud/api/1", proxyConfig)
+	client := vrchat.NewClientWithProxy("https://api.vrchat.cloud/api/1", proxyConfig, time.Minute*1)
 
 	// Testing proxy
 	ip, err := client.TestProxy()
