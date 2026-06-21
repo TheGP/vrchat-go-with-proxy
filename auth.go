@@ -12,24 +12,50 @@ func (c *Client) Authenticate(username, password, totp string, userAgent string)
 		"Accept":       "application/json",
 		"Content-Type": "application/json",
 	})
-	resp, err := c.client.R().
+
+	// Step 1: GET /auth/user with Basic Auth to establish session
+	fmt.Printf("Sending request to /auth/user\n")
+	fmt.Printf("Username: %s\n", username)
+	fmt.Printf("Password: %s\n", password)
+
+	authResp, err := c.client.R().
 		SetBasicAuth(username, password).
-		SetBody(map[string]string{
-			"code": totp,
-		}).
-		Post("/auth/twofactorauth/totp/verify")
+		Get("/auth/user")
 	if err != nil {
 		return err
 	}
-
-	if resp.StatusCode() != 200 {
-		return fmt.Errorf("failed to authenticate: %s", resp.String())
+	fmt.Printf("Response: %+v\n", authResp)
+	if authResp.StatusCode() != 200 {
+		return fmt.Errorf("failed to authenticate: %s", authResp.String())
 	}
 
-	cookies := resp.Cookies()
-	c.client.SetCookies(cookies)
+	// Collect cookies from auth response
+	allCookies := authResp.Cookies()
+	c.client.SetCookies(allCookies)
 
-	for _, cookie := range cookies {
+	// Step 2: POST TOTP code to verify 2FA
+	if totp != "" {
+		fmt.Printf("Sending request to /auth/twofactorauth/totp/verify\n")
+		fmt.Printf("TOTP Code: %s\n", totp)
+
+		verifyResp, err := c.client.R().
+			SetBody(map[string]string{
+				"code": totp,
+			}).
+			Post("/auth/twofactorauth/totp/verify")
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Response: %+v\n", verifyResp)
+		if verifyResp.StatusCode() != 200 {
+			return fmt.Errorf("failed to authenticate: %s", verifyResp.String())
+		}
+		// Merge cookies from TOTP verify response
+		allCookies = append(allCookies, verifyResp.Cookies()...)
+		c.client.SetCookies(allCookies)
+	}
+
+	for _, cookie := range allCookies {
 		fmt.Printf("Cookie: %s=%s; Domain=%s; Path=%s; Expires=%s; Secure=%t; HttpOnly=%t\n",
 			cookie.Name, cookie.Value, cookie.Domain, cookie.Path, cookie.Expires, cookie.Secure, cookie.HttpOnly)
 	}
