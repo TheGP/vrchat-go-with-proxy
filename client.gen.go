@@ -57,7 +57,17 @@ func RateLimitingMiddleware(minInterval time.Duration) resty.RequestMiddleware {
 }
 
 type Client struct {
-	client *resty.Client
+	client      *resty.Client
+	rateLimiter *RateLimiter
+}
+
+// ResetRateLimit resets the rate limiter so the next request fires without waiting.
+func (c *Client) ResetRateLimit() {
+	if c.rateLimiter != nil {
+		c.rateLimiter.mu.Lock()
+		c.rateLimiter.lastRequest = time.Time{}
+		c.rateLimiter.mu.Unlock()
+	}
 }
 
 // ProxyConfig holds proxy configuration parameters
@@ -69,14 +79,17 @@ type ProxyConfig struct {
 }
 
 func NewClient(baseURL string, delay time.Duration) *Client {
+	rl := NewRateLimiter(delay)
 	return &Client{
-		client: resty.New().SetBaseURL(baseURL).AddRequestMiddleware(RateLimitingMiddleware(delay)),
+		client:      resty.New().SetBaseURL(baseURL).AddRequestMiddleware(rl.Middleware()),
+		rateLimiter: rl,
 	}
 }
 
 // NewClientWithProxy creates a new VRChat client with proxy support
 func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig, delay time.Duration) *Client {
-	client := resty.New().SetBaseURL(baseURL).AddRequestMiddleware(RateLimitingMiddleware(delay))
+	rl := NewRateLimiter(delay)
+	client := resty.New().SetBaseURL(baseURL).AddRequestMiddleware(rl.Middleware())
 
 	if proxyConfig != nil {
 		proxyURL := fmt.Sprintf("http://%s:%s@%s:%s",
@@ -88,7 +101,8 @@ func NewClientWithProxy(baseURL string, proxyConfig *ProxyConfig, delay time.Dur
 	}
 
 	return &Client{
-		client: client,
+		client:      client,
+		rateLimiter: rl,
 	}
 }
 

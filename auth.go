@@ -37,8 +37,10 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 	c.client.SetCookies(allCookies)
 
 	// Step 2: POST TOTP code to verify 2FA
-	// Generate code here (after rate-limit wait) so it's within the 30s window
+	// Reset rate limiter so the POST fires immediately — code expires in 30s,
+	// but the rate limiter would otherwise wait up to 60s and expire it.
 	if totpSecret != "" {
+		c.ResetRateLimit()
 		code, err := totp.GenerateCode(totpSecret, time.Now())
 		if err != nil {
 			return fmt.Errorf("failed to generate TOTP code: %w", err)
