@@ -8,6 +8,8 @@ require (
 )
 
 require (
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
+	github.com/pquerna/otp v1.5.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )

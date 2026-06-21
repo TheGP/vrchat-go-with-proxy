@@ -3,10 +3,13 @@ package vrchat
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/pquerna/otp/totp"
 )
 
 // Authenticate authenticates the client with the VRChat API
-func (c *Client) Authenticate(username, password, totp string, userAgent string) error {
+func (c *Client) Authenticate(username, password, totpSecret string, userAgent string) error {
 	c.client.SetHeaders(map[string]string{
 		"User-Agent":   userAgent,
 		"Accept":       "application/json",
@@ -34,13 +37,19 @@ func (c *Client) Authenticate(username, password, totp string, userAgent string)
 	c.client.SetCookies(allCookies)
 
 	// Step 2: POST TOTP code to verify 2FA
-	if totp != "" {
+	// Generate code here (after rate-limit wait) so it's within the 30s window
+	if totpSecret != "" {
+		code, err := totp.GenerateCode(totpSecret, time.Now())
+		if err != nil {
+			return fmt.Errorf("failed to generate TOTP code: %w", err)
+		}
+
 		fmt.Printf("Sending request to /auth/twofactorauth/totp/verify\n")
-		fmt.Printf("TOTP Code: %s\n", totp)
+		fmt.Printf("TOTP Code: %s\n", code)
 
 		verifyResp, err := c.client.R().
 			SetBody(map[string]string{
-				"code": totp,
+				"code": code,
 			}).
 			Post("/auth/twofactorauth/totp/verify")
 		if err != nil {
