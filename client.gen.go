@@ -59,6 +59,7 @@ func RateLimitingMiddleware(minInterval time.Duration) resty.RequestMiddleware {
 type Client struct {
 	client      *resty.Client
 	rateLimiter *RateLimiter
+	cookies     []*http.Cookie
 }
 
 // ResetRateLimit resets the rate limiter so the next request fires without waiting.
@@ -112,11 +113,12 @@ func (c *Client) SetCookies(cookies []*http.Cookie) {
 }
 
 func (c *Client) GetCookies() []*http.Cookie {
-	return c.client.Cookies()
+	return c.cookies
 }
 
 func (c *Client) ClearCookies() {
-	c.client.SetCookies([]*http.Cookie{})
+	c.cookies = nil
+	c.client.SetHeader("Cookie", "")
 }
 
 // CheckUserExistsParams represents the parameters for the CheckUserExists request

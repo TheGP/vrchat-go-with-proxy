@@ -51,6 +51,7 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 	for _, ck := range allCookies {
 		fmt.Printf("  Cookie: %s=%s Domain=%s\n", ck.Name, ck.Value, ck.Domain)
 	}
+	c.cookies = allCookies
 	c.client.SetHeader("Cookie", cookiesHeader(allCookies))
 
 	// Step 2: POST TOTP code to verify 2FA.
@@ -77,6 +78,7 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 			return fmt.Errorf("failed to authenticate: %s", verifyResp.String())
 		}
 		allCookies = append(allCookies, verifyResp.Cookies()...)
+		c.cookies = allCookies
 		c.client.SetHeader("Cookie", cookiesHeader(allCookies))
 	}
 
@@ -89,7 +91,7 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 }
 
 func (c *Client) AuthenticateWithCookies(cookies []*http.Cookie, userAgent string) error {
-	// Same empty-domain issue: set Cookie header directly instead of using SetCookies.
+	c.cookies = cookies
 	c.client.SetHeader("Cookie", cookiesHeader(cookies))
 	c.client.SetHeader("User-Agent", userAgent)
 	return nil
