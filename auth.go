@@ -3,10 +3,21 @@ package vrchat
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pquerna/otp/totp"
 )
+
+// cookiesHeader builds a Cookie header value from a slice of cookies,
+// bypassing resty/http.CookieJar domain matching (which drops empty-domain cookies).
+func cookiesHeader(cookies []*http.Cookie) string {
+	parts := make([]string, 0, len(cookies))
+	for _, ck := range cookies {
+		parts = append(parts, ck.Name+"="+ck.Value)
+	}
+	return strings.Join(parts, "; ")
+}
 
 // Authenticate authenticates the client with the VRChat API
 func (c *Client) Authenticate(username, password, totpSecret string, userAgent string) error {
@@ -32,15 +43,17 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 		return fmt.Errorf("failed to authenticate: %s", authResp.String())
 	}
 
-	// Collect cookies from auth response
+	// Collect cookies from auth response.
+	// VRChat returns auth cookies with empty Domain; resty's cookie jar drops these
+	// during domain matching, so we pass them as a raw Cookie header instead.
 	allCookies := authResp.Cookies()
 	fmt.Printf("Cookies from /auth/user: %d\n", len(allCookies))
 	for _, ck := range allCookies {
 		fmt.Printf("  Cookie: %s=%s Domain=%s\n", ck.Name, ck.Value, ck.Domain)
 	}
-	c.client.SetCookies(allCookies)
+	c.client.SetHeader("Cookie", cookiesHeader(allCookies))
 
-	// Step 2: POST TOTP code to verify 2FA
+	// Step 2: POST TOTP code to verify 2FA.
 	// Reset rate limiter so the POST fires immediately — code expires in 30s,
 	// but the rate limiter would otherwise wait up to 60s and expire it.
 	if totpSecret != "" {
@@ -53,12 +66,8 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 		fmt.Printf("Sending request to /auth/twofactorauth/totp/verify\n")
 		fmt.Printf("TOTP Code: %s\n", code)
 
-		// Pass cookies explicitly at request level to avoid cookie-jar domain matching issues
 		verifyResp, err := c.client.R().
-			SetCookies(allCookies).
-			SetBody(map[string]string{
-				"code": code,
-			}).
+			SetBody(map[string]string{"code": code}).
 			Post("/auth/twofactorauth/totp/verify")
 		if err != nil {
 			return err
@@ -67,9 +76,8 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 		if verifyResp.StatusCode() != 200 {
 			return fmt.Errorf("failed to authenticate: %s", verifyResp.String())
 		}
-		// Merge cookies from TOTP verify response
 		allCookies = append(allCookies, verifyResp.Cookies()...)
-		c.client.SetCookies(allCookies)
+		c.client.SetHeader("Cookie", cookiesHeader(allCookies))
 	}
 
 	for _, cookie := range allCookies {
@@ -81,7 +89,8 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 }
 
 func (c *Client) AuthenticateWithCookies(cookies []*http.Cookie, userAgent string) error {
-	c.client.SetCookies(cookies)
+	// Same empty-domain issue: set Cookie header directly instead of using SetCookies.
+	c.client.SetHeader("Cookie", cookiesHeader(cookies))
 	c.client.SetHeader("User-Agent", userAgent)
 	return nil
 }
