@@ -34,6 +34,10 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 
 	// Collect cookies from auth response
 	allCookies := authResp.Cookies()
+	fmt.Printf("Cookies from /auth/user: %d\n", len(allCookies))
+	for _, ck := range allCookies {
+		fmt.Printf("  Cookie: %s=%s Domain=%s\n", ck.Name, ck.Value, ck.Domain)
+	}
 	c.client.SetCookies(allCookies)
 
 	// Step 2: POST TOTP code to verify 2FA
@@ -49,7 +53,9 @@ func (c *Client) Authenticate(username, password, totpSecret string, userAgent s
 		fmt.Printf("Sending request to /auth/twofactorauth/totp/verify\n")
 		fmt.Printf("TOTP Code: %s\n", code)
 
+		// Pass cookies explicitly at request level to avoid cookie-jar domain matching issues
 		verifyResp, err := c.client.R().
+			SetCookies(allCookies).
 			SetBody(map[string]string{
 				"code": code,
 			}).
